@@ -36,6 +36,7 @@ export class StructureEditor implements EditorPanel {
 
 	protected gridActive: boolean
 	protected invisibleBlocksActive: boolean
+	protected undefinedBlocksActive: boolean
 	protected selectedBlock: BlockPos | null
 
 	constructor(protected readonly root: Element, protected readonly vscode: VSCode, protected readonly editHandler: EditHandler, protected readonly readOnly: boolean) {
@@ -81,6 +82,7 @@ export class StructureEditor implements EditorPanel {
 
 		this.gridActive = true
 		this.invisibleBlocksActive = false
+		this.undefinedBlocksActive = false
 		this.selectedBlock = null
 
 		let dragTime: number
@@ -166,6 +168,10 @@ export class StructureEditor implements EditorPanel {
 				this.renderer.drawInvisibleBlocks(viewMatrix)
 			}
 
+			if (this.undefinedBlocksActive) {
+				this.renderer.drawUndefinedBlocks(viewMatrix)
+			}
+
 			this.renderer.drawStructure(viewMatrix)
 
 			if (this.selectedBlock) {
@@ -241,9 +247,9 @@ export class StructureEditor implements EditorPanel {
 		this.file = file
 		this.structure = this.loadStructure()
 		const isLarge = this.isLarge()
-		const toggle = document.querySelector('.invisible-blocks-toggle')
-		toggle?.classList.toggle('unavailable', isLarge)
-		toggle?.setAttribute('title', isLarge ? locale('invisibleBlocksUnavailable') : '')
+		const invisibleToggle = document.querySelector('.invisible-blocks-toggle')
+		invisibleToggle?.classList.toggle('unavailable', isLarge)
+		invisibleToggle?.setAttribute('title', isLarge ? locale('invisibleBlocksUnavailable') : '')
 
 		if (isLarge) {
 			this.warning.classList.add('active')
@@ -275,6 +281,8 @@ export class StructureEditor implements EditorPanel {
 		const isLarge = this.isLarge()
 		this.renderer.useInvisibleBlocks = !isLarge
 		this.renderer2.useInvisibleBlocks = !isLarge
+		this.renderer.useUndefinedBlocks = true
+		this.renderer2.useUndefinedBlocks = true
 		this.renderer.setStructure(this.structure)
 		this.renderer2.setStructure(this.structure)
 	}
@@ -301,7 +309,18 @@ export class StructureEditor implements EditorPanel {
 			this.render()
 		})
 
-		return [gridToggle, invisibleBlocksToggle]
+		const undefinedBlocksToggle = document.createElement('div')
+		undefinedBlocksToggle.classList.add('btn', 'undefined-blocks-toggle')
+		undefinedBlocksToggle.textContent = locale('undefinedBlocks')
+		undefinedBlocksToggle.classList.toggle('active', this.undefinedBlocksActive)
+		undefinedBlocksToggle.addEventListener('click', () => {
+			if (!this.renderer.useUndefinedBlocks) return
+			this.undefinedBlocksActive = !this.undefinedBlocksActive
+			undefinedBlocksToggle.classList.toggle('active', this.undefinedBlocksActive)
+			this.render()
+		})
+
+		return [gridToggle, invisibleBlocksToggle, undefinedBlocksToggle]
 	}
 
 	private getViewMatrix() {
